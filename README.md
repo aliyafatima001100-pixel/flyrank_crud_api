@@ -1,8 +1,33 @@
-# Task API
+# Task API - Assignment 2
 
-A small CRUD API built with Python and FastAPI. It allows users to create, view, update, and delete tasks.
+A CRUD API built with Python, FastAPI, and SQLite.
 
-## Run the API
+## What changed from Assignment 1?
+
+In Assignment 1, tasks were stored in an in-memory Python list.
+
+In Assignment 2, tasks are stored in a SQLite database. This means
+the data remains available even when the FastAPI server is restarted.
+
+## Why SQLite?
+
+SQLite was chosen because it is lightweight and does not require a
+separate database server. The entire database is stored in one file.
+
+## Database location
+
+The SQLite database is stored as:
+
+`tasks.db`
+
+in the project directory.
+
+The application automatically creates the database and the `tasks`
+table when they do not already exist.
+
+Three example tasks are inserted only when the table is empty.
+
+## How to run
 
 Install the required packages:
 
@@ -16,40 +41,41 @@ Start the server:
 uvicorn main:app --reload
 ```
 
-The API runs at `http://127.0.0.1:8000`.
+The API will be available at:
 
-## Swagger UI
+```
+http://127.0.0.1:8000
+```
 
-Interactive API documentation is available at:
+## Swagger documentation
+
+Open:
 
 ```
 http://127.0.0.1:8000/docs
 ```
 
-## API Endpoints
+## API endpoints
 
-| Method | Endpoint          | Purpose                |
-|--------|-------------------|-------------------------|
-| GET    | `/`               | View API information   |
-| GET    | `/health`         | Check server status    |
-| GET    | `/tasks`          | View all tasks         |
-| GET    | `/tasks/{task_id}`| View one task          |
-| POST   | `/tasks`          | Create a task           |
-| PUT    | `/tasks/{task_id}`| Update a task           |
-| DELETE | `/tasks/{task_id}`| Delete a task           |
+| Method | Endpoint      | Description         |
+|--------|---------------|----------------------|
+| GET    | `/`           | API information     |
+| GET    | `/health`     | Check API health    |
+| GET    | `/tasks`      | Get all tasks       |
+| GET    | `/tasks/{id}` | Get one task        |
+| POST   | `/tasks`      | Create a task        |
+| PUT    | `/tasks/{id}` | Update a task        |
+| DELETE | `/tasks/{id}` | Delete a task        |
 
-## Example Request
+## Example SQL query
 
-```bash
-curl -i -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d "{\"title\":\"Study FastAPI\"}"
+```sql
+SELECT * FROM tasks WHERE done = 1;
 ```
 
-Expected status:
+This query returns all completed tasks.
 
-```
-HTTP/1.1 201 Created
-```
+## SQLite screenshot
 
-## Swagger Screenshot
-
-The Swagger UI screenshot is included in this repository as `swagger.png`.
+A screenshot of the `tasks.db` database, viewed in a SQLite database
+browser, is included in this repository as `sqlite-screenshot.png`.
