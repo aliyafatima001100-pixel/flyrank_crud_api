@@ -138,3 +138,67 @@ def create_task(task: Task):
         "title": task.title.strip(),
         "done": task.done
     }
+
+
+@app.put("/tasks/{id}")
+def update_task(id: int, task: Task):
+    if not task.title.strip():
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Title cannot be empty"}
+        )
+
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        """
+        UPDATE tasks
+        SET title = ?, done = ?
+        WHERE id = ?
+        """,
+        (task.title.strip(), task.done, id)
+    )
+
+    connection.commit()
+
+    if cursor.rowcount == 0:
+        connection.close()
+
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Task not found"}
+        )
+
+    connection.close()
+
+    return {
+        "id": id,
+        "title": task.title.strip(),
+        "done": task.done
+    }
+
+
+@app.delete("/tasks/{id}")
+def delete_task(id: int):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        "DELETE FROM tasks WHERE id = ?",
+        (id,)
+    )
+
+    connection.commit()
+
+    if cursor.rowcount == 0:
+        connection.close()
+
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Task not found"}
+        )
+
+    connection.close()
+
+    return {
+        "message": "Task deleted successfully"
+    }
