@@ -1,12 +1,19 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from pydantic import BaseModel
+
 import sqlite3
 
 
 app = FastAPI(title="Task API", version="1.0")
 
 DATABASE = "tasks.db"
+
+
+class Task(BaseModel):
+    title: str
+    done: bool = False
 
 
 def get_db_connection():
@@ -103,3 +110,31 @@ def get_task(id: int):
         )
 
     return dict(task)
+
+
+@app.post("/tasks", status_code=201)
+def create_task(task: Task):
+    if not task.title.strip():
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Title is required and cannot be empty"}
+        )
+
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        "INSERT INTO tasks (title, done) VALUES (?, ?)",
+        (task.title.strip(), task.done)
+    )
+
+    connection.commit()
+
+    new_id = cursor.lastrowid
+
+    connection.close()
+
+    return {
+        "id": new_id,
+        "title": task.title.strip(),
+        "done": task.done
+    }
