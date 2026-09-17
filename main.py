@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+
 import sqlite3
 
 
@@ -59,3 +61,45 @@ def read_root():
         "version": "1.0",
         "endpoints": ["/tasks"]
     }
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
+@app.get("/tasks")
+def get_tasks():
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        "SELECT id, title, done FROM tasks"
+    )
+
+    tasks = [dict(row) for row in cursor.fetchall()]
+
+    connection.close()
+
+    return tasks
+
+
+@app.get("/tasks/{id}")
+def get_task(id: int):
+    connection = get_db_connection()
+
+    cursor = connection.execute(
+        "SELECT id, title, done FROM tasks WHERE id = ?",
+        (id,)
+    )
+
+    task = cursor.fetchone()
+
+    connection.close()
+
+    if task is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Task not found"}
+        )
+
+    return dict(task)
