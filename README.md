@@ -83,7 +83,7 @@ browser, is included in this repository as `sqlite-screenshot.png`.
 ## Database (Postgres in Docker)
 
 ```bash
-docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks -p 5432:5432 -v taskdata:/var/lib/postgresql/data -d postgres:16
+docker run --name taskdb -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=tasks -p 5433:5432 -v taskdata:/var/lib/postgresql/data -d postgres:16
 ```
 
 SQL prompt: `docker exec -it taskdb psql -U postgres -d tasks`
