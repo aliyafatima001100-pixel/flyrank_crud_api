@@ -72,4 +72,26 @@ def fetch_task(task_id):
     with connect() as conn:
         return conn.execute(
             "SELECT * FROM tasks WHERE id = %s", (task_id,)
-        ).fetchone()            
+        ).fetchone()    
+
+
+def insert_task(title, done=False):
+    with connect() as conn:
+        return conn.execute(
+            "INSERT INTO tasks (title, done) VALUES (%s, %s) RETURNING *",
+            (title, done),
+        ).fetchone()
+
+
+def modify_task(task_id, title, done):
+    with connect() as conn:
+        return conn.execute(
+            "UPDATE tasks SET title = %s, done = %s WHERE id = %s RETURNING *",
+            (title, done, task_id),
+        ).fetchone()
+
+
+def remove_task(task_id):
+    with connect() as conn:
+        cur = conn.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
+        return cur.rowcount > 0            

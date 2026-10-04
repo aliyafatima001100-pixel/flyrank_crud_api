@@ -1,15 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.responses import JSONResponse
-
 from pydantic import BaseModel
 
-import sqlite3
 import db
 
 
 app = FastAPI(title="Task API", version="1.0")
-
-DATABASE = "tasks.db"
 
 
 class Task(BaseModel):
@@ -17,50 +13,10 @@ class Task(BaseModel):
     done: bool = False
 
 
-def get_db_connection():
-    connection = sqlite3.connect(DATABASE)
-    connection.row_factory = sqlite3.Row
-    return connection
-
-
-def init_db():
-    connection = get_db_connection()
-
-    connection.execute("""
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            done BOOLEAN NOT NULL DEFAULT 0
-        )
-    """)
-
-    cursor = connection.execute("SELECT COUNT(*) FROM tasks")
-    count = cursor.fetchone()[0]
-
-    if count == 0:
-        connection.execute(
-            "INSERT INTO tasks (title, done) VALUES (?, ?)",
-            ("Buy groceries", False)
-        )
-
-        connection.execute(
-            "INSERT INTO tasks (title, done) VALUES (?, ?)",
-            ("Finish assignment", True)
-        )
-
-        connection.execute(
-            "INSERT INTO tasks (title, done) VALUES (?, ?)",
-            ("Practice Python", False)
-        )
-
-    connection.commit()
-    connection.close()
-
-
 @app.on_event("startup")
 def startup():
-    init_db()
     db.setup_database()
+
 
 @app.get("/")
 def read_root():
@@ -74,6 +30,7 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
 
 @app.get("/tasks")
 def get_tasks(search: str | None = None, done: bool | None = None):
@@ -90,6 +47,7 @@ def get_task(task_id: int):
         )
     return task
 
+
 @app.post("/tasks", status_code=201)
 def create_task(task: Task):
     if not task.title.strip():
@@ -98,24 +56,7 @@ def create_task(task: Task):
             content={"error": "Title is required and cannot be empty"}
         )
 
-    connection = get_db_connection()
-
-    cursor = connection.execute(
-        "INSERT INTO tasks (title, done) VALUES (?, ?)",
-        (task.title.strip(), task.done)
-    )
-
-    connection.commit()
-
-    new_id = cursor.lastrowid
-
-    connection.close()
-
-    return {
-        "id": new_id,
-        "title": task.title.strip(),
-        "done": task.done
-    }
+    return db.insert_task(task.title.strip(), task.done)
 
 
 @app.put("/tasks/{id}")
@@ -126,57 +67,23 @@ def update_task(id: int, task: Task):
             content={"error": "Title cannot be empty"}
         )
 
-    connection = get_db_connection()
+    updated = db.modify_task(id, task.title.strip(), task.done)
 
-    cursor = connection.execute(
-        """
-        UPDATE tasks
-        SET title = ?, done = ?
-        WHERE id = ?
-        """,
-        (task.title.strip(), task.done, id)
-    )
-
-    connection.commit()
-
-    if cursor.rowcount == 0:
-        connection.close()
-
+    if updated is None:
         return JSONResponse(
             status_code=404,
             content={"error": "Task not found"}
         )
 
-    connection.close()
-
-    return {
-        "id": id,
-        "title": task.title.strip(),
-        "done": task.done
-    }
+    return updated
 
 
-@app.delete("/tasks/{id}")
+@app.delete("/tasks/{id}", status_code=204)
 def delete_task(id: int):
-    connection = get_db_connection()
-
-    cursor = connection.execute(
-        "DELETE FROM tasks WHERE id = ?",
-        (id,)
-    )
-
-    connection.commit()
-
-    if cursor.rowcount == 0:
-        connection.close()
-
+    if not db.remove_task(id):
         return JSONResponse(
             status_code=404,
             content={"error": "Task not found"}
         )
 
-    connection.close()
-
-    return {
-        "message": "Task deleted successfully"
-    }
+    return Response(status_code=204)
