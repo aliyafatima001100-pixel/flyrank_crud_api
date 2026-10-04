@@ -53,3 +53,23 @@ def setup_database(retries=15, delay=2):
                 raise
             print(f"Database not ready (attempt {attempt}/{retries}): {exc}", flush=True)
             time.sleep(delay)
+
+def fetch_tasks(search=None, done=None):
+    query = "SELECT * FROM tasks WHERE TRUE"
+    params = []
+    if done is not None:
+        query += " AND done = %s"
+        params.append(done)
+    if search is not None:
+        query += " AND title ILIKE %s"
+        params.append(f"%{search}%")
+    query += " ORDER BY id"
+    with connect() as conn:
+        return conn.execute(query, params).fetchall()
+
+
+def fetch_task(task_id):
+    with connect() as conn:
+        return conn.execute(
+            "SELECT * FROM tasks WHERE id = %s", (task_id,)
+        ).fetchone()            
